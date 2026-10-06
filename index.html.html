@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>İstanbul Sağlık ve Teknoloji Üniversitesi Hedef GANO Hesaplama Aracı</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--tx:#1b1f2a;--mu:#667085;--bd:#e3e6ee;--ac:#3b5bdb;--ok:#2f9e44;--bad:#e03131;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161c;--card:#1d2028;--tx:#eceef4;--mu:#9aa1b2;--bd:#2d313c;--ac:#7c93ff;--ok:#51cf66;--bad:#ff6b6b}}
+:root[data-theme="dark"]{--bg:#14161c;--card:#1d2028;--tx:#eceef4;--mu:#9aa1b2;--bd:#2d313c;--ac:#7c93ff;--ok:#51cf66;--bad:#ff6b6b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.4}
+main{max-width:860px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:8px 0 4px}
+.sub{color:var(--mu);font-size:14px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.big{font-size:30px;font-weight:700}
+.lbl{font-size:12px;color:var(--mu)}
+input{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:7px 8px;width:100%;min-width:0}
+input:focus{outline:2px solid var(--ac);border-color:transparent}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:720px}
+th{font-size:12px;color:var(--mu);text-align:left;font-weight:600;padding:4px 4px}
+td{padding:4px}
+td.n{width:96px}td.s{width:64px}td.w{width:74px}
+.res{font-weight:600;white-space:nowrap}
+.hint{font-size:12px;color:var(--mu)}
+.FF{color:var(--bad)}
+.need{color:var(--ac);font-size:13px}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:7px 12px}
+button.p{background:var(--ac);color:#fff;border-color:var(--ac)}
+.x{padding:4px 8px;color:var(--mu)}
+.row{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+.row>div{flex:0 0 130px}
+</style>
+</head>
+<body>
+<main>
+<h1>İstanbul Sağlık ve Teknoloji Üniversitesi Hedef GANO Hesaplama Aracı</h1>
+<div class="sub">Mutlak değerlendirme tablosuna göre. Boş bıraktığın sınavlar "henüz girilmedi" sayılır.</div>
+
+<div class="card">
+  <div class="row">
+    <div><div class="lbl">Hedef GANO</div><input id="target" type="number" step="0.01" min="0" max="4" value="3.5"></div>
+    <div class="hint" style="flex:1;min-width:200px">Eksik sınavı olan derslerden hedefe ulaşmak için gerekeni aşağıda gösteririm.</div>
+  </div>
+</div>
+
+<div class="card sum">
+  <div><div class="lbl">Şu anki GANO (girilen dersler)</div><div class="big" id="gano">–</div></div>
+  <div><div class="lbl">Tamamlanan / toplam kredi</div><div class="big" id="kr">–</div></div>
+  <div><div class="lbl">Kalan derslerde gereken ort.</div><div class="big" id="req">–</div></div>
+</div>
+<div class="card" id="msg" style="display:none"></div>
+
+<div class="card scroll">
+<table>
+<thead><tr><th>Ders</th><th>Kredi</th><th>Vize %</th><th>Vize</th><th>Final</th><th>Puan</th><th>Harf</th><th>Gereken</th><th></th></tr></thead>
+<tbody id="body"></tbody>
+</table>
+<div style="margin-top:10px"><button class="p" onclick="addRow()">+ Ders ekle</button></div>
+</div>
+
+<div class="hint">Kurallar: finalden 40'ın altı veya ders puanı 40'ın altı = FF. Harf: AA ≥90, BA ≥80, BB ≥70, CB ≥60, CC ≥50, DC ≥45, DD ≥40. Sınıf 30 kişiyi geçerse bağıl değerlendirme yapılabilir, o durumda sonuçlar değişir. "Gereken" sütunu kalan derslerin hepsinde aynı harfi aldığını varsayar.</div>
+</main>
+
+<script>
+const T=[[90,'AA',4],[80,'BA',3.5],[70,'BB',3],[60,'CB',2.5],[50,'CC',2],[45,'DC',1.5],[40,'DD',1]];
+let rows=[["CSE101",4],["COE101",3],["MTH101",4],["PHY101",4],["ATA111",2],["TRD111",2]].map(([n,k])=>({n,k,w:40,v:"",f:""}));
+const $=id=>document.getElementById(id);
+const num=x=>x===""||x==null||isNaN(+x)?null:+x;
+function letter(s){for(const t of T)if(s>=t[0])return t;return[0,'FF',0]}
+function render(){
+  $('body').innerHTML=rows.map((r,i)=>`<tr>
+  <td><input value="${r.n}" oninput="rows[${i}].n=this.value"></td>
+  <td class="s"><input type="number" min="0" value="${r.k}" oninput="rows[${i}].k=this.value;calc()"></td>
+  <td class="w"><input type="number" min="0" max="100" value="${r.w}" oninput="rows[${i}].w=this.value;calc()"></td>
+  <td class="n"><input type="number" min="0" max="100" value="${r.v}" oninput="rows[${i}].v=this.value;calc()"></td>
+  <td class="n"><input type="number" min="0" max="100" value="${r.f}" oninput="rows[${i}].f=this.value;calc()"></td>
+  <td class="res" id="p${i}"></td><td class="res" id="h${i}"></td><td class="need" id="g${i}"></td>
+  <td><button class="x" onclick="rows.splice(${i},1);render()">✕</button></td></tr>`).join('');
+  calc();
+}
+function addRow(){rows.push({n:"Yeni ders",k:3,w:40,v:"",f:""});render()}
+function calc(){
+  let done=0,pts=0,rem=0,tot=0;const state=[];
+  rows.forEach((r,i)=>{
+    const k=num(r.k)||0,w=(num(r.w)??40)/100,v=num(r.v),f=num(r.f);tot+=k;
+    if(v!==null&&f!==null){
+      const s=w*v+(1-w)*f,L=f<40||s<40?[0,'FF',0]:letter(s);
+      done+=k;pts+=k*L[2];state.push({i,k,w,v,f,done:true});
+      $('p'+i).textContent=s.toFixed(1);$('h'+i).innerHTML=L[1]=='FF'?'<span class="FF">FF</span>':L[1]+' ('+L[2].toFixed(1)+')';
+    }else{state.push({i,k,w,v,f,done:false});rem+=k;$('p'+i).textContent='–';$('h'+i).textContent='–'}
+  });
+  $('gano').textContent=done?(pts/done).toFixed(2):'–';
+  $('kr').textContent=done+' / '+tot;
+  const tg=num($('target').value),m=$('msg');
+  let r=null;
+  if(rem>0&&tg!==null){r=(tg*tot-pts)/rem;$('req').textContent=r>4?'imkansız':r<=0?'≤ 0':r.toFixed(2)}
+  else $('req').textContent=rem?'–':'bitti';
+  state.forEach(s=>{
+    const el=$('g'+s.i);
+    if(s.done||r===null){el.textContent='';return}
+    if(r>4){el.textContent='ulaşılamaz';return}
+    if(r<=0){el.textContent='geçmek yeterli';return}
+    const L=[...T].reverse().find(t=>t[2]>=r-1e-9);const S=L[0];
+    if(s.v===null&&s.f!==null){el.textContent=L[1]+' için puan ≥ '+S;return}
+    if(s.v!==null){
+      let fin=(S-s.w*s.v)/(1-s.w);fin=Math.max(fin,40);
+      el.textContent=fin>100?L[1]+': imkansız':'Final ≥ '+(Math.ceil(fin*10)/10);
+    }else el.textContent=L[1]+' için ders puanı ≥ '+S;
+  });
+  if(tg!==null&&done===tot&&tot>0){m.style.display='block';const g=pts/done;m.innerHTML=g>=tg?`<b style="color:var(--ok)">Hedefe ulaştın:</b> ${g.toFixed(2)} ≥ ${tg}`:`<b class="FF">Hedefin altında:</b> ${g.toFixed(2)} &lt; ${tg}`}
+  else if(r!==null&&r>4){m.style.display='block';m.innerHTML='<b class="FF">Bu notlarla hedef ulaşılamaz.</b> Kalan derslerin hepsi AA olsa bile yetmez.'}
+  else m.style.display='none';
+}
+$('target').addEventListener('input',calc);
+render();
+</script>
+</body>
+</html>
